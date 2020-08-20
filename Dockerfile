@@ -1,7 +1,6 @@
 # build init from alpine base
-FROM alpine:3.12 as initbasestage
-
-ARG ALPINE_VERSION="3.12"
+ARG ALPINE_VERSION=3.12
+FROM alpine:${ALPINE_VERSION} as initbasestage
 
 RUN \
  echo "**** install build deps ****" && \
@@ -42,7 +41,7 @@ RUN \
 
 	
 # build kernel
-FROM alpine:3.12 as buildstage
+FROM alpine:${ALPINE_VERSION} as buildstage
 ARG KERNEL_VERSION="5.4.58"
 ARG THREADS=8
 COPY --from=initbasestage /initrd /initrd
@@ -98,6 +97,6 @@ RUN \
  mv arch/x86/boot/bzImage /vmlinuz && \
  chmod 777 /vmlinuz
 
-FROM alpine:3.12
+FROM alpine:${ALPINE_VERSION}
 COPY --from=buildstage /vmlinuz /vmlinuz
 COPY /root/dump.sh /dump.sh
