@@ -11,8 +11,8 @@ RUN \
 	xz 
 
 RUN \
- echo "**** install yq form edge/testing repository ****" && \
- apk add --no-cache --upgrade --repository=http://dl-cdn.alpinelinux.org/alpine/edge/testing \
+ echo "**** install yq form edge/testing or community repository ****" && \
+ apk add --no-cache --upgrade --repository=http://dl-cdn.alpinelinux.org/alpine/edge/testing --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community \
 	yq
 
 RUN \
