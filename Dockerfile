@@ -1,6 +1,7 @@
 # build init from alpine base
 ARG ALPINE_VERSION=3.12
 FROM alpine:${ALPINE_VERSION} as initbasestage
+ARG ALPINE_VERSION
 
 RUN \
  echo "**** install build deps ****" && \
