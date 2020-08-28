@@ -30,21 +30,40 @@ RUN \
 	-C /initrd
 
 RUN \
+ echo "**** grab Alpine linux-lts version ****" && \
+ LATESTbranch=$(curl -sL \
+	http://dl-cdn.alpinelinux.org/alpine/latest-stable/releases/x86_64/latest-releases.yaml \
+	| yq read - [0].branch) && \
+ echo LATESTbranch: $LATESTbranch && \
+  linuxVERSION=$(pkgNAME="linux-lts" ; apk info --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/v${ALPINE_VERSION}/main ${pkgNAME} \
+                | grep "description:" | cut -d" " -f1 | sed -e "s/${pkgNAME}//" | cut -d"-" -f2 ) && \
+ echo linuxVERSION: "$linuxVERSION"
+
+# busybox-static busybox busybox-extras
+RUN \
  echo "**** install initrd deps ****" && \
  apk --no-cache --upgrade --root /initrd add \
 	bash \
 	busybox-extras \
 	curl \
 	dialog \
+	e2fsprogs \
+	pciutils \
+	usbutils \
+	lsscsi \
+	blkid \
+	util-linux \
 	net-tools && \
  apk add --no-cache --upgrade --root /initrd --repository=http://dl-cdn.alpinelinux.org/alpine/edge/testing \
-	kexec-tools
+	kexec-tools zerofree
 
 	
 # build kernel
 FROM alpine:${ALPINE_VERSION} as buildstage
-ARG KERNEL_VERSION="5.4.58"
-ARG THREADS=8
+#ARG KERNEL_VERSION="5.4.58"
+ARG KERNEL_VERSION="${linuxVERSION}"
+ARG THREADS=1
+#--build-arg THREADS=$(grep processor /proc/cpuinfo | wc -l)
 COPY --from=initbasestage /initrd /initrd
 COPY /root /
 
@@ -94,6 +113,8 @@ RUN \
  cd /linux-* && \
  cp ../linuxconfig .config && \
  make oldconfig && make prepare && \
+ export THREADS=$(grep processor /proc/cpuinfo | wc -l) && \
+ echo THREADS: ${THREADS} && \
  make -j ${THREADS} && \
  mv arch/x86/boot/bzImage /vmlinuz && \
  chmod 777 /vmlinuz
