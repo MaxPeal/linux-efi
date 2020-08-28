@@ -61,6 +61,9 @@ RUN \
 # build kernel
 FROM alpine:${ALPINE_VERSION} as buildstage
 #ARG KERNEL_VERSION="5.4.58"
+RUN  linuxVERSION=$(pkgNAME="linux-lts" ; apk info --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/v${ALPINE_VERSION}/main ${pkgNAME} \
+                | grep "description:" | cut -d" " -f1 | sed -e "s/${pkgNAME}//" | cut -d"-" -f2 ) && \
+     echo linuxVERSION: "$linuxVERSION"
 ARG KERNEL_VERSION="${linuxVERSION}"
 ARG THREADS=1
 #--build-arg THREADS=$(grep processor /proc/cpuinfo | wc -l)
