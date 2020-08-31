@@ -1,6 +1,7 @@
 # build init from alpine base
 ARG ALPINE_VERSION=3.12
-FROM alpine:${ALPINE_VERSION} as initbasestage
+ARG ALPINE_DOCKER_VERSION=3.10
+FROM alpine:${ALPINE_DOCKER_VERSION} as initbasestage
 ARG ALPINE_VERSION
 
 RUN \
@@ -39,67 +40,12 @@ RUN \
                 | grep "description:" | cut -d" " -f1 | sed -e "s/${pkgNAME}//" | cut -d"-" -f2 ) && \
  echo linuxVERSION: "$linuxVERSION"
 
-# busybox-static busybox busybox-extras
-RUN \
- echo "**** install initrd deps ****" && \
- apk --no-cache --upgrade --root /initrd add \
-	bash \
-	busybox-extras \
-	curl \
-	dialog \
-	e2fsprogs \
-	pciutils \
-	usbutils \
-	lsscsi \
-	blkid \
-	util-linux \
-	net-tools && \
- apk add --no-cache --upgrade --root /initrd --repository=http://dl-cdn.alpinelinux.org/alpine/edge/testing \
-	kexec-tools zerofree
-
-	
 # build kernel
-FROM alpine:${ALPINE_VERSION} as buildstage
+FROM alpine:${ALPINE_DOCKER_VERSION} as buildstage
 #ARG KERNEL_VERSION="5.4.58"
 RUN  linuxVERSION=$(pkgNAME="linux-lts" ; apk info --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/v${ALPINE_VERSION}/main ${pkgNAME} \
                 | grep "description:" | cut -d" " -f1 | sed -e "s/${pkgNAME}//" | cut -d"-" -f2 ) && \
      echo linuxVERSION: "$linuxVERSION"
-ARG KERNEL_VERSION=${linuxVERSION}
-ARG THREADS=1
-#--build-arg THREADS=$(grep processor /proc/cpuinfo | wc -l)
-COPY --from=initbasestage /initrd /initrd
-COPY /root /
-
-RUN \
- echo "**** install build deps ****" && \
- apk add --no-cache --upgrade \
-	bash \
-	bison \
-	diffutils \
-	elfutils-dev \
-	elfutils-libelf \
-	findutils \
-	flex \
-	gcc \
-	linux-headers \
-	make \
-	musl-dev \
-	openssl \
-	openssl-dev \
-	perl-dev \
-	python3 \
-	tar \
-	gnupg \
-	xz
-
-RUN \
- echo "**** generate build output skeleton ****" && \
- mknod -m 622 /initrd/dev/console c 5 1 && \
- mknod -m 622 /initrd/dev/tty0 c 4 0 && \
- mv \
-	/init \
-	/kexec.sh \
-	/initrd/ 
 
 RUN \
  echo "**** download assets ${KERNEL_VERSION} ${linuxVERSION} $KERNEL_VERSION $linuxVERSION ****" && \
@@ -108,20 +54,5 @@ RUN \
  xz -v -d linux-${KERNEL_VERSION}.tar.xz && \
  gpg --keyserver keyserver.ubuntu.com --recv B8868C80BA62A1FFFAF5FDA9632D3A06589DA6B1 647F28654894E3BD457199BE38DBBDC86092693E ABAF11C65A2970B130ABE3C479BE3E4300411886 && \
  gpg --verify linux-${KERNEL_VERSION}.tar.sign && \
- tar xf linux-${KERNEL_VERSION}.tar && \
- rm -f *.tar.* 
-
-RUN \
- echo "**** compile linux ****" && \
- cd /linux-* && \
- cp ../linuxconfig .config && \
- make oldconfig && make prepare && \
- export THREADS=$(grep processor /proc/cpuinfo | wc -l) && \
- echo THREADS: ${THREADS} && \
- make -j ${THREADS} && \
- mv arch/x86/boot/bzImage /vmlinuz && \
- chmod 777 /vmlinuz
-
-FROM alpine:${ALPINE_VERSION}
-COPY --from=buildstage /vmlinuz /vmlinuz
-COPY /root/dump.sh /dump.sh
+ tar xf linux-${KERNEL_VERSION}.tar 
+ 
