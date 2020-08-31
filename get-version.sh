@@ -52,6 +52,7 @@ parse_yaml() {
 ENVDIR=${PWD}/buildout-env
 rm EOF.env
 rm $ENVDIR/EOF.env
+mkdir -p $ENVDIR
 #cat > EOF.env <<"EOFvar"
 MARKER-START:
 IMAGE_NAME="alpine:latest"
@@ -120,13 +121,15 @@ echo "##############"
 #}
 
 # https://stackoverflow.com/questions/17529220/why-should-eval-be-avoided-in-bash-and-what-should-i-use-instead/52538533#52538533
-function token_quote {
-  local quoted=()
-  for token; do
-    quoted+=( "$(printf '%q' "$token")" )
-  done
-  printf '%s\n' "${quoted[*]}"
-}
+#function token_quote {
+#{
+#  local quoted=()
+#   quoted=()
+#  for token; do
+#    quoted+=( "$(printf '%q' "$token")" )
+#  done
+#  printf '%s\n' "${quoted[*]}"
+#}
 
 esceval()
 {
@@ -134,7 +137,7 @@ esceval()
 }
 fooecho()
 {
-	echo fooecho $@ fooecho fooecho fooecho
+	echo fooecho "$@" fooecho fooecho fooecho
 }
 
 
@@ -143,14 +146,16 @@ for i in $VARlist ; do
  	fooecho $i 
 	#esceval $(echo "\$$i")
 input2="Trying to hack you; date"
-cmd2=(echo "User gave:" "$input")
-ieval=$(eval "$(echo "${cmd2[@]}")")
+cmd2=$(echo "User gave:" "$input")
+###ieval=$(eval "$(echo "${cmd2[@]}")")
 echo $ieval
-ieval=$(eval "$(token_quote "${cmd2[@]}")")
+###ieval=$(eval "$(token_quote "${cmd2[@]}")")
+###ieval=$(eval "$(quote "${cmd2[@]}")")
 echo $ieval
 
-cmd=(echo "$i"=$(echo "\$$i") )
-ieval=$(eval "$(token_quote "${cmd[@]}")")
+cmd=$(echo "$i"=$(echo "\$$i") )
+####ieval=$(eval "$(token_quote "${cmd[@]}")")
+####ieval=$(eval "$(quote "${cmd[@]}")")
 echo $ieval
 
 echo fooo3
@@ -177,6 +182,7 @@ echo foo4
 	echo "$i=$ivar" >> $i.env
 	echo "$i=$ivar2" >> envfile.env
 	echo "$i=$(echo $(echo "\$$i"))" >> envfile.env  
+        echo "$i=$(echo $(echo "\$$i"))" >> $ENVDIR/EOF.env 
 done
 ###exit 0
 
